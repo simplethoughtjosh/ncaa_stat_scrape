@@ -1,0 +1,237 @@
+<inputBehavior
+    name="STP_NCAA_Basketball: Main"
+    url="STP_NCAA_BasketballMain.html"
+    UIGroups="API"
+    version="1.1.029"
+    index="0"
+    hasHelpPanel="false"
+    hasDataVariablePanel="true">
+
+  <!-- Sport -->
+  <variable name="sport_code" type="text" />
+  <variable name="sport_label" type="text" />
+  <variable name="is_wbb" type="text" />
+  <variable name="period_structure" type="text" />
+  <variable name="period_unit" type="text" />
+  <variable name="foul_trouble_threshold" type="text" />
+  <variable name="foul_out" type="text" />
+
+  <!-- Away on court -->
+  <variable name="away_team" type="text" />
+  <variable name="away_team_logo" type="image" />
+  <variable name="away_p1_name" type="text" />
+  <variable name="away_p1_name_first" type="text" />
+  <variable name="away_p1_name_last" type="text" />
+  <variable name="away_p1_number" type="text" />
+  <variable name="away_p1_pos" type="text" />
+  <variable name="away_p1_photo" type="image" />
+  <variable name="away_p2_name" type="text" />
+  <variable name="away_p2_name_first" type="text" />
+  <variable name="away_p2_name_last" type="text" />
+  <variable name="away_p2_number" type="text" />
+  <variable name="away_p2_pos" type="text" />
+  <variable name="away_p2_photo" type="image" />
+  <variable name="away_p3_name" type="text" />
+  <variable name="away_p3_name_first" type="text" />
+  <variable name="away_p3_name_last" type="text" />
+  <variable name="away_p3_number" type="text" />
+  <variable name="away_p3_pos" type="text" />
+  <variable name="away_p3_photo" type="image" />
+  <variable name="away_p4_name" type="text" />
+  <variable name="away_p4_name_first" type="text" />
+  <variable name="away_p4_name_last" type="text" />
+  <variable name="away_p4_number" type="text" />
+  <variable name="away_p4_pos" type="text" />
+  <variable name="away_p4_photo" type="image" />
+  <variable name="away_p5_name" type="text" />
+  <variable name="away_p5_name_first" type="text" />
+  <variable name="away_p5_name_last" type="text" />
+  <variable name="away_p5_number" type="text" />
+  <variable name="away_p5_pos" type="text" />
+  <variable name="away_p5_photo" type="image" />
+
+  <!-- Home on court -->
+  <variable name="home_team" type="text" />
+  <variable name="home_team_logo" type="image" />
+  <variable name="home_p1_name" type="text" />
+  <variable name="home_p1_name_first" type="text" />
+  <variable name="home_p1_name_last" type="text" />
+  <variable name="home_p1_number" type="text" />
+  <variable name="home_p1_pos" type="text" />
+  <variable name="home_p1_photo" type="image" />
+  <variable name="home_p2_name" type="text" />
+  <variable name="home_p2_name_first" type="text" />
+  <variable name="home_p2_name_last" type="text" />
+  <variable name="home_p2_number" type="text" />
+  <variable name="home_p2_pos" type="text" />
+  <variable name="home_p2_photo" type="image" />
+  <variable name="home_p3_name" type="text" />
+  <variable name="home_p3_name_first" type="text" />
+  <variable name="home_p3_name_last" type="text" />
+  <variable name="home_p3_number" type="text" />
+  <variable name="home_p3_pos" type="text" />
+  <variable name="home_p3_photo" type="image" />
+  <variable name="home_p4_name" type="text" />
+  <variable name="home_p4_name_first" type="text" />
+  <variable name="home_p4_name_last" type="text" />
+  <variable name="home_p4_number" type="text" />
+  <variable name="home_p4_pos" type="text" />
+  <variable name="home_p4_photo" type="image" />
+  <variable name="home_p5_name" type="text" />
+  <variable name="home_p5_name_first" type="text" />
+  <variable name="home_p5_name_last" type="text" />
+  <variable name="home_p5_number" type="text" />
+  <variable name="home_p5_pos" type="text" />
+  <variable name="home_p5_photo" type="image" />
+
+  <!-- Player L3 / free throw -->
+  <variable name="player_team" type="text" />
+  <variable name="player_team_side" type="text" />
+  <variable name="player_name" type="text" />
+  <variable name="player_number" type="text" />
+  <variable name="player_pos" type="text" />
+  <variable name="player_photo" type="image" />
+  <variable name="player_team_logo" type="image" />
+  <variable name="player_pts" type="text" />
+  <variable name="player_fg" type="text" />
+  <variable name="player_3pt" type="text" />
+  <variable name="player_ft" type="text" />
+  <variable name="player_reb" type="text" />
+  <variable name="player_ast" type="text" />
+  <variable name="player_stl" type="text" />
+  <variable name="player_blk" type="text" />
+  <variable name="player_to" type="text" />
+  <variable name="player_pf" type="text" />
+  <variable name="player_min" type="text" />
+  <variable name="player_ft_attempt" type="text" />
+  <variable name="player_code" type="text" />
+
+  <!-- Game summary -->
+  <variable name="away_score" type="text"><pattern>[0-9][0-9][0-9]</pattern></variable>
+  <variable name="home_score" type="text"><pattern>[0-9][0-9][0-9]</pattern></variable>
+  <variable name="period_label" type="text" />
+  <variable name="clock" type="text" />
+  <variable name="away_fg" type="text" />
+  <variable name="home_fg" type="text" />
+  <variable name="away_3pt" type="text" />
+  <variable name="home_3pt" type="text" />
+  <variable name="away_ft" type="text" />
+  <variable name="home_ft" type="text" />
+  <variable name="away_reb" type="text" />
+  <variable name="home_reb" type="text" />
+  <variable name="away_ast" type="text" />
+  <variable name="home_ast" type="text" />
+  <variable name="away_to" type="text" />
+  <variable name="home_to" type="text" />
+  <variable name="away_stl" type="text" />
+  <variable name="home_stl" type="text" />
+  <variable name="away_blk" type="text" />
+  <variable name="home_blk" type="text" />
+  <variable name="away_pf" type="text" />
+  <variable name="home_pf" type="text" />
+  <variable name="away_stats_overall" type="text" />
+  <variable name="home_stats_overall" type="text" />
+  <variable name="away_stats_conference" type="text" />
+  <variable name="home_stats_conference" type="text" />
+  <variable name="away_coach_name" type="text" />
+  <variable name="home_coach_name" type="text" />
+  <variable name="away_coach_photo" type="image" />
+  <variable name="home_coach_photo" type="image" />
+  <variable name="away_coach_school_total" type="text" />
+  <variable name="home_coach_school_total" type="text" />
+  <variable name="away_coach_career_total" type="text" />
+  <variable name="home_coach_career_total" type="text" />
+  <variable name="away_coach_season_total" type="text" />
+  <variable name="home_coach_season_total" type="text" />
+  <variable name="away_coach_total_seasons" type="text" />
+  <variable name="home_coach_total_seasons" type="text" />
+
+  <!-- Substitution pair (FIFO: one out / one in at a time) -->
+  <variable name="sub_team" type="text" />
+  <variable name="sub_team_side" type="text" />
+  <variable name="sub_team_logo" type="image" />
+  <variable name="sub_out" type="text" />
+  <variable name="sub_in" type="text" />
+
+  <!-- Foul trouble (slots 1-5) -->
+  <variable name="foul_count" type="text" />
+  <variable name="foul_1_team" type="text" />
+  <variable name="foul_1_logo" type="image" />
+  <variable name="foul_1_name" type="text" />
+  <variable name="foul_1_number" type="text" />
+  <variable name="foul_1_pf" type="text" />
+  <variable name="foul_2_team" type="text" />
+  <variable name="foul_2_logo" type="image" />
+  <variable name="foul_2_name" type="text" />
+  <variable name="foul_2_number" type="text" />
+  <variable name="foul_2_pf" type="text" />
+  <variable name="foul_3_team" type="text" />
+  <variable name="foul_3_logo" type="image" />
+  <variable name="foul_3_name" type="text" />
+  <variable name="foul_3_number" type="text" />
+  <variable name="foul_3_pf" type="text" />
+  <variable name="foul_4_team" type="text" />
+  <variable name="foul_4_logo" type="image" />
+  <variable name="foul_4_name" type="text" />
+  <variable name="foul_4_number" type="text" />
+  <variable name="foul_4_pf" type="text" />
+  <variable name="foul_5_team" type="text" />
+  <variable name="foul_5_logo" type="image" />
+  <variable name="foul_5_name" type="text" />
+  <variable name="foul_5_number" type="text" />
+  <variable name="foul_5_pf" type="text" />
+
+  <!-- Leaders -->
+  <variable name="lead_pts_1_name" type="text" />
+  <variable name="lead_pts_1_number" type="text" />
+  <variable name="lead_pts_1_team" type="text" />
+  <variable name="lead_pts_1_value" type="text" />
+  <variable name="lead_pts_2_name" type="text" />
+  <variable name="lead_pts_2_number" type="text" />
+  <variable name="lead_pts_2_team" type="text" />
+  <variable name="lead_pts_2_value" type="text" />
+  <variable name="lead_pts_3_name" type="text" />
+  <variable name="lead_pts_3_number" type="text" />
+  <variable name="lead_pts_3_team" type="text" />
+  <variable name="lead_pts_3_value" type="text" />
+  <variable name="lead_reb_1_name" type="text" />
+  <variable name="lead_reb_1_number" type="text" />
+  <variable name="lead_reb_1_team" type="text" />
+  <variable name="lead_reb_1_value" type="text" />
+  <variable name="lead_reb_2_name" type="text" />
+  <variable name="lead_reb_2_number" type="text" />
+  <variable name="lead_reb_2_team" type="text" />
+  <variable name="lead_reb_2_value" type="text" />
+  <variable name="lead_reb_3_name" type="text" />
+  <variable name="lead_reb_3_number" type="text" />
+  <variable name="lead_reb_3_team" type="text" />
+  <variable name="lead_reb_3_value" type="text" />
+  <variable name="lead_ast_1_name" type="text" />
+  <variable name="lead_ast_1_number" type="text" />
+  <variable name="lead_ast_1_team" type="text" />
+  <variable name="lead_ast_1_value" type="text" />
+  <variable name="lead_ast_2_name" type="text" />
+  <variable name="lead_ast_2_number" type="text" />
+  <variable name="lead_ast_2_team" type="text" />
+  <variable name="lead_ast_2_value" type="text" />
+  <variable name="lead_ast_3_name" type="text" />
+  <variable name="lead_ast_3_number" type="text" />
+  <variable name="lead_ast_3_team" type="text" />
+  <variable name="lead_ast_3_value" type="text" />
+
+  <!-- Timeout -->
+  <variable name="timeout_label" type="text" />
+  <variable name="timeout_team" type="text" />
+  <variable name="timeout_team_side" type="text" />
+  <variable name="timeout_clock" type="text" />
+  <variable name="timeout_period" type="text" />
+
+  <!-- Shot maps -->
+  <variable name="away_shot_map" type="image" />
+  <variable name="home_shot_map" type="image" />
+
+  <controls>
+    <button name="Update Preview" action="doStill" tooltip="Still update linked titles" />
+    <button name="Animate Update" action="doUpdate" tooltip="Animated update" />
+  </controls>
+</inputBehavior>

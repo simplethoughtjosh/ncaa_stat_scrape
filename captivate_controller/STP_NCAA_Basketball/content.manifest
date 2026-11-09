@@ -1,0 +1,23 @@
+{
+  "manifestSpec": "1.0",
+  "identifier": "com.newblue.controller.stp_ncaa_basketball",
+  "uuid": "7c4e1a2b-9d60-4f3e-8b17-6a5d0c8e2f41",
+  "version": "1.1.029",
+  "name": { "en": "STP_NCAA_Basketball" },
+  "description": {
+    "en": "NCAA basketball data controller. Live scraper fills on-court, player lower-third, substitutions, foul trouble, leaders, timeout, and shot-map variables for Titler Live."
+  },
+  "releaseDate": "2026-11-06",
+  "releaseStage": "production",
+  "compatibility": {
+    "targetApp": "Captivate",
+    "supportedVersion": ">=5.0"
+  },
+  "deployment": [
+    {
+      "operation": "copy",
+      "source": "payload/STP_NCAA_Basketball",
+      "target": "${DATACONTROLLERS}/STP_NCAA_Basketball"
+    }
+  ]
+}

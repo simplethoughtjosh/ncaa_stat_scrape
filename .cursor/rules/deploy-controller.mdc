@@ -1,0 +1,16 @@
+---
+description: Always deploy Captivate controller after changing it
+alwaysApply: true
+---
+
+# Deploy Captivate controller automatically
+
+Whenever you change anything under `captivate_controller/STP_NCAA_Basketball/` (HTML, XML, VERSION, js, or a version bump):
+
+1. Keep VERSION / HTML badge / `CONTROLLER_VERSION` / XML `version` / `content.manifest` / `docs/VERSIONING.md` in sync (see `docs/VERSIONING.md`).
+2. **Immediately** run `scripts/deploy_controller.sh` with permissions that can write outside the workspace (`required_permissions: ["all"]`).
+3. Tell Josh the deployed version and that Captivate may need a restart (or reopen the Data Controller) to show it — do **not** ask him to copy files manually.
+
+Destination (override with `STP_NCAA_DATACONTROLLERS` if needed):
+
+`/Users/Shared/NewBlue/LiveEngine/DataControllers/STP_NCAA_Basketball`

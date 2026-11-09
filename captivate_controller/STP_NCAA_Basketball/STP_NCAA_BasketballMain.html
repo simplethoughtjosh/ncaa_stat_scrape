@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>STP NCAA Basketball</title>
+  <script src="js/servicehandler.js"></script>
+  <script src="js/connection-manager.js"></script>
+  <style>
+    :root {
+      --bg: #1a1d23;
+      --panel: #242830;
+      --border: #3a4050;
+      --text: #e8eaed;
+      --muted: #9aa0a6;
+      --accent: #4c8bf5;
+      --ok: #2ecc71;
+      --warn: #e67e22;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 14px;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: var(--bg); color: var(--text); font-size: 13px;
+    }
+    h2 { margin: 0 0 8px; font-size: 15px; }
+    h3 { margin: 0 0 8px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+    .panel {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 8px; padding: 12px; margin-bottom: 10px;
+    }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 8px; }
+    label { font-size: 11px; color: var(--muted); display: block; margin-bottom: 2px; }
+    input[type="text"], input[type="number"], select {
+      width: 100%; min-width: 70px; padding: 6px 8px;
+      background: #15171c; border: 1px solid var(--border); border-radius: 4px; color: var(--text);
+    }
+    input[type="number"] { min-width: 64px; width: 72px; }
+    select { min-width: 180px; }
+    .field { flex: 1 1 90px; }
+    button {
+      background: var(--accent); color: #fff; border: 0; border-radius: 6px;
+      padding: 8px 12px; cursor: pointer; font-weight: 600; font-size: 12px;
+    }
+    button.secondary { background: #3a4050; }
+    button.danger { background: #c0392b; }
+    button:hover { filter: brightness(1.08); }
+    .status { font-size: 12px; color: var(--muted); }
+    .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 999px;
+      background: #15171c; border: 1px solid var(--border); font-size: 11px;
+    }
+    .badge.on { border-color: var(--ok); color: var(--ok); }
+    .badge.version { color: var(--muted); letter-spacing: 0.02em; }
+    .title-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+    .title-row h2 { margin: 0; }
+    .check { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+    .check input { width: auto; }
+    .preview { font-size: 12px; color: var(--muted); white-space: pre-wrap; max-height: 72px; overflow: auto; }
+    .err { color: #ff8a80; }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <div class="title-row">
+      <h2>STP NCAA Basketball</h2>
+      <span class="badge version" id="controllerVersion" title="Controller version">v1.1.029</span>
+    </div>
+    <div class="row">
+      <span class="badge" id="sportBadge">Sport: —</span>
+      <span class="badge" id="scoreBadge">Score: —</span>
+      <span class="badge" id="connBadge">Connecting…</span>
+    </div>
+    <div class="status" id="scraperStatus">Waiting for scraper on :8765…</div>
+  </div>
+
+  <div class="panel">
+    <h3>Configuration</h3>
+    <div class="check">
+      <input type="checkbox" id="autoSubs" />
+      <label for="autoSubs" style="margin:0">Automatic Subs (animate in / 4s / out)</label>
+    </div>
+    <div class="check">
+      <input type="checkbox" id="autoFouls" />
+      <label for="autoFouls" style="margin:0">Automatic Foul Trouble</label>
+    </div>
+    <div class="row" style="align-items:center; margin-top:-2px">
+      <div class="field" style="flex:0 0 auto">
+        <label for="foulHoldSeconds">Foul hold (seconds)</label>
+        <input type="number" id="foulHoldSeconds" min="1" max="60" step="1" value="4" />
+      </div>
+      <div class="status" style="padding-bottom:2px">Used for auto and Take. Saved on this machine.</div>
+    </div>
+    <div class="check">
+      <input type="checkbox" id="autoTimeouts" />
+      <label for="autoTimeouts" style="margin:0">Automatic Timeouts</label>
+    </div>
+    <div class="status">Sport is detected from the live box score (read-only).</div>
+    <div class="status" id="graphicListStatus"></div>
+  </div>
+
+  <div class="panel">
+    <h3>Starting five</h3>
+    <div class="row">
+      <div class="field">
+        <label for="graphic_away_on_court">Away graphic</label>
+        <select id="graphic_away_on_court" data-graphic="away_on_court"></select>
+      </div>
+      <div class="field">
+        <label for="graphic_home_on_court">Home graphic</label>
+        <select id="graphic_home_on_court" data-graphic="home_on_court"></select>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Player L3 / Free throw</h3>
+    <div class="row">
+      <div class="field">
+        <label for="graphic_player_l3">Graphic</label>
+        <select id="graphic_player_l3" data-graphic="player_l3"></select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field" style="flex:0 0 110px">
+        <label>Code (H21 / A14)</label>
+        <input type="text" id="playerCode" placeholder="H21" />
+      </div>
+      <button onclick="cuePlayer()">Cue Player</button>
+    </div>
+    <div class="preview" id="playerPreview"></div>
+  </div>
+
+  <div class="panel">
+    <h3>Substitutions</h3>
+    <div class="row">
+      <div class="field">
+        <label for="graphic_substitution">Graphic</label>
+        <select id="graphic_substitution" data-graphic="substitution"></select>
+      </div>
+    </div>
+    <div class="row">
+      <button onclick="takeSub()">Take Sub</button>
+      <button class="danger" onclick="clearSub()">Clear Sub</button>
+    </div>
+    <div class="preview" id="subPreview"></div>
+  </div>
+
+  <div class="panel">
+    <h3>Boards</h3>
+    <div class="row">
+      <div class="field">
+        <label for="graphic_foul_trouble">Foul trouble graphic</label>
+        <select id="graphic_foul_trouble" data-graphic="foul_trouble"></select>
+      </div>
+      <div class="field">
+        <label for="graphic_leaders">Leaders graphic</label>
+        <select id="graphic_leaders" data-graphic="leaders"></select>
+      </div>
+      <div class="field">
+        <label for="graphic_timeout">Timeout graphic</label>
+        <select id="graphic_timeout" data-graphic="timeout"></select>
+      </div>
+    </div>
+    <div class="row">
+      <button class="secondary" onclick="takeFoul()">Take Foul Trouble</button>
+      <button class="danger" onclick="clearFoul()">Clear Foul</button>
+      <button class="secondary" onclick="takeLeaders()">Take Leaders</button>
+      <button class="secondary" onclick="takeTimeout()">Take Timeout</button>
+      <button class="danger" onclick="clearTimeoutGfx()">Clear Timeout</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Summary and shot maps</h3>
+    <div class="row">
+      <div class="field">
+        <label for="graphic_game_summary">Team summary graphic</label>
+        <select id="graphic_game_summary" data-graphic="game_summary"></select>
+      </div>
+      <div class="field">
+        <label for="graphic_shot_maps">Shot map graphic</label>
+        <select id="graphic_shot_maps" data-graphic="shot_maps"></select>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Keep in sync with VERSION and STP_NCAA_BasketballMain.xml — see docs/VERSIONING.md
+    const CONTROLLER_VERSION = '1.1.029';
+    const FOUL_HOLD_DEFAULT = 4;
+    const FOUL_HOLD_STORAGE_KEY = 'stp_ncaa_foul_hold_seconds';
+    const INPUT_NAME = 'STP_NCAA_Basketball: Main';
+    const API = 'http://127.0.0.1:8765';
+    const GRAPHIC_KEYS = [
+      'away_on_court',
+      'home_on_court',
+      'player_l3',
+      'substitution',
+      'foul_trouble',
+      'leaders',
+      'timeout',
+      'game_summary',
+      'shot_maps',
+    ];
+    // Used when localStorage has no prior pick for that board.
+    const GRAPHIC_DEFAULTS = {
+      substitution: 'sub',
+    };
+    const TITLE_REFRESH_MS = 2000;
+    let scheduler = null;
+    let holdTimer = null;
+    let onAirKind = null;
+    let subPairQueue = [];
+    // Auto actions wait here while another kind is finishing its hold.
+    let pendingAuto = [];
+    let latestTitles = [];
+    let titleListSignature = '';
+    let titleRefreshBusy = false;
+    let titleWatchTimer = null;
+
+    function $(id) { return document.getElementById(id); }
+
+    function graphicStorageKey(key) { return 'stp_ncaa_graphic_' + key; }
+
+    function selectedTitle(key) {
+      const el = document.querySelector('select[data-graphic="' + key + '"]');
+      return el ? el.value.trim() : '';
+    }
+
+    function captivateScheduler() {
+      if (typeof ServiceHandler !== 'undefined' && ServiceHandler.scheduler) return ServiceHandler.scheduler;
+      return scheduler;
+    }
+
+    function titlesFromControlInfo(result) {
+      if (!result) return [];
+      if (typeof result === 'string') {
+        try { result = JSON.parse(result); } catch (err) { return []; }
+      }
+      if (Array.isArray(result)) return result;
+      if (Array.isArray(result.titles)) return result.titles;
+      const nested = result.reply || result.data || result.result || null;
+      if (Array.isArray(nested)) return nested;
+      if (nested && Array.isArray(nested.titles)) return nested.titles;
+      if (typeof nested === 'string') return titlesFromControlInfo(nested);
+      return [];
+    }
+
+    function titleDisplayName(title) {
+      if (typeof title === 'string') return title;
+      return title.name || title.title || title.titleName || title.id || '';
+    }
+
+    function titleInternalId(title) {
+      if (typeof title === 'string') return '';
+      return title.id || '';
+    }
+
+    function resolveGraphicWant(key, saved, titles) {
+      // Prefer the visible name so renames/copies of a graphic named "sub"
+      // keep working. Migrate legacy localStorage IDs to the current name.
+      const fallback = GRAPHIC_DEFAULTS[key] || '';
+      const want = (saved || '').trim();
+      if (!want) return fallback;
+      // Title list not loaded yet — keep the saved pick as-is.
+      if (!titles || !titles.length) return want;
+      const byName = titles.find((t) => titleDisplayName(t) === want);
+      if (byName) return titleDisplayName(byName);
+      const byId = titles.find((t) => titleInternalId(t) === want);
+      if (byId) {
+        const name = titleDisplayName(byId);
+        if (name) {
+          try { localStorage.setItem(graphicStorageKey(key), name); } catch (err) { /* ignore */ }
+          return name;
+        }
+      }
+      // Orphan GUID / deleted title — drop it so defaults can apply.
+      try { localStorage.removeItem(graphicStorageKey(key)); } catch (err) { /* ignore */ }
+      return fallback;
+    }
+
+    function fillGraphicSelect(sel, titles) {
+      const key = sel.getAttribute('data-graphic');
+      const saved = localStorage.getItem(graphicStorageKey(key)) || '';
+      const want = resolveGraphicWant(key, saved, titles) || sel.value || '';
+      // Only rewrite storage once we have a real title list (avoid wiping on empty restore).
+      if (want && titles && titles.length) {
+        try { localStorage.setItem(graphicStorageKey(key), want); } catch (err) { /* ignore */ }
+      }
+      sel.innerHTML = '';
+      const blank = document.createElement('option');
+      blank.value = '';
+      blank.textContent = 'Linked to this input';
+      sel.appendChild(blank);
+      let matched = !want;
+      titles.forEach((title) => {
+        const name = titleDisplayName(title);
+        if (!name) return;
+        const opt = document.createElement('option');
+        // Persist and schedule by display name (Captivate accepts name or id).
+        opt.value = name;
+        opt.textContent = name;
+        if (want && want === name) {
+          opt.selected = true;
+          matched = true;
+        }
+        sel.appendChild(opt);
+      });
+      if (want && !matched) {
+        const extra = document.createElement('option');
+        extra.value = want;
+        extra.textContent = want;
+        extra.selected = true;
+        sel.appendChild(extra);
+      }
+    }
+
+    function restoreGraphicSelects() {
+      document.querySelectorAll('select[data-graphic]').forEach((sel) => fillGraphicSelect(sel, []));
+    }
+
+    async function askForTitles(command) {
+      const sched = captivateScheduler();
+      if (!sched || !sched.scheduleCommand) return [];
+      try {
+        const result = await sched.scheduleCommand(command, {}, {});
+        return titlesFromControlInfo(result);
+      } catch (err) {
+        return [];
+      }
+    }
+
+    function titleListKey(titles) {
+      return titles.map((title) => {
+        if (typeof title === 'string') return title;
+        const id = title.id || '';
+        const name = title.name || title.title || title.titleName || '';
+        return id + '\t' + name;
+      }).join('\n');
+    }
+
+    function applyProjectTitles(titles) {
+      const signature = titleListKey(titles);
+      const changed = signature !== titleListSignature;
+      titleListSignature = signature;
+      document.querySelectorAll('select[data-graphic]').forEach((sel) => {
+        const stale = sel.getAttribute('data-titles-stale') === '1';
+        const applied = sel.getAttribute('data-titles-applied') === '1';
+        if (!changed && applied && !stale) return;
+        // Rebuilding an open menu closes it. Apply that one after it closes.
+        if (document.activeElement === sel) {
+          sel.setAttribute('data-titles-stale', '1');
+          return;
+        }
+        fillGraphicSelect(sel, titles);
+        sel.setAttribute('data-titles-applied', '1');
+        sel.removeAttribute('data-titles-stale');
+      });
+      const status = $('graphicListStatus');
+      if (status) {
+        status.textContent = titles.length
+          ? ''
+          : 'No graphics in the open project yet. New titles show up here without restarting.';
+      }
+    }
+
+    async function loadProjectTitles() {
+      if (!captivateScheduler() || titleRefreshBusy) return;
+      titleRefreshBusy = true;
+      try {
+        // Cookbook name is singular. Some builds also answer the plural Kart Timing uses.
+        let titles = await askForTitles('getTitleControlInfo');
+        if (!titles.length) titles = await askForTitles('getTitlesControlInfo');
+        latestTitles = titles;
+        applyProjectTitles(titles);
+      } finally {
+        titleRefreshBusy = false;
+      }
+    }
+
+    function watchProjectTitles() {
+      if (titleWatchTimer) return;
+      titleWatchTimer = setInterval(loadProjectTitles, TITLE_REFRESH_MS);
+      window.addEventListener('focus', loadProjectTitles);
+    }
+
+    async function pushGraphics() {
+      const body = {};
+      GRAPHIC_KEYS.forEach((key) => {
+        const value = selectedTitle(key);
+        localStorage.setItem(graphicStorageKey(key), value);
+        body[key] = value;
+      });
+      try {
+        await api('/graphics', { method: 'POST', body });
+      } catch (err) {
+        /* scraper may still be starting; localStorage keeps the choice */
+      }
+    }
+
+    (function showVersion() {
+      const el = $('controllerVersion');
+      if (el) el.textContent = 'v' + CONTROLLER_VERSION;
+    })();
+
+    async function api(path, opts) {
+      const res = await fetch(API + path, {
+        method: (opts && opts.method) || 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        body: opts && opts.body ? JSON.stringify(opts.body) : undefined,
+      });
+      return res.json();
+    }
+
+    async function refreshStatus() {
+      try {
+        const st = await api('/status');
+        const sport = (st.sport && st.sport.sport_label) || '—';
+        const code = (st.sport && st.sport.sport_code) || '';
+        $('sportBadge').textContent = `Sport: ${sport}${code ? ' (' + code + ')' : ''}`;
+        $('sportBadge').classList.add('on');
+        const sc = st.score || {};
+        $('scoreBadge').textContent = `Score: ${sc.away || '-'}–${sc.home || '-'}  ${sc.period || ''} ${sc.clock || ''}`.trim();
+        $('scraperStatus').textContent = `Scraper OK · game ${st.game_id || '?'}`;
+        $('scraperStatus').classList.remove('err');
+        if (st.config) {
+          $('autoSubs').checked = !!st.config.automatic_subs;
+          $('autoFouls').checked = !!st.config.automatic_fouls;
+          $('autoTimeouts').checked = !!st.config.automatic_timeouts;
+        }
+        if (st.last_player) {
+          $('playerPreview').textContent = `${st.last_player.player_code || ''} ${st.last_player.player_name || ''} #${st.last_player.player_number || ''}  ${st.last_player.player_pts || ''} PTS${st.last_player.player_ft_attempt ? ' · FT ' + st.last_player.player_ft_attempt : ''}`;
+        }
+        if (st.last_sub) {
+          $('subPreview').textContent = `OUT ${st.last_sub.sub_out || ''} / IN ${st.last_sub.sub_in || ''}  ${st.last_sub.sub_team || ''}`.trim();
+        }
+        // Poll auto-play queue
+        const auto = await api('/auto');
+        for (const action of (auto.actions || [])) {
+          await runAutoPlayout(action);
+        }
+      } catch (e) {
+        $('scraperStatus').textContent = 'Scraper offline — start: python -m college_sports_scraper.cli control --game-id …';
+        $('scraperStatus').classList.add('err');
+      }
+    }
+
+    function readFoulHoldSeconds() {
+      const raw = Number($('foulHoldSeconds').value);
+      if (!Number.isFinite(raw)) return FOUL_HOLD_DEFAULT;
+      return Math.min(60, Math.max(1, Math.round(raw)));
+    }
+
+    function persistFoulHoldSeconds(seconds) {
+      $('foulHoldSeconds').value = String(seconds);
+      try { localStorage.setItem(FOUL_HOLD_STORAGE_KEY, String(seconds)); } catch (err) { /* ignore */ }
+    }
+
+    async function pushConfig() {
+      const foulHold = readFoulHoldSeconds();
+      persistFoulHoldSeconds(foulHold);
+      await api('/config', {
+        method: 'POST',
+        body: {
+          automatic_subs: $('autoSubs').checked,
+          automatic_fouls: $('autoFouls').checked,
+          automatic_timeouts: $('autoTimeouts').checked,
+          foul_hold_seconds: foulHold,
+        },
+      });
+      localStorage.setItem('stp_ncaa_auto_subs', $('autoSubs').checked ? '1' : '0');
+      localStorage.setItem('stp_ncaa_auto_fouls', $('autoFouls').checked ? '1' : '0');
+      localStorage.setItem('stp_ncaa_auto_timeouts', $('autoTimeouts').checked ? '1' : '0');
+    }
+
+    $('autoSubs').addEventListener('change', pushConfig);
+    $('autoFouls').addEventListener('change', pushConfig);
+    $('autoTimeouts').addEventListener('change', pushConfig);
+    $('foulHoldSeconds').addEventListener('change', pushConfig);
+    $('foulHoldSeconds').addEventListener('blur', pushConfig);
+
+    async function cuePlayer() {
+      const code = $('playerCode').value.trim();
+      const result = await api('/player', { method: 'POST', body: { code } });
+      if (!result.ok) {
+        $('playerPreview').textContent = result.error || 'Cue failed';
+        $('playerPreview').classList.add('err');
+        return;
+      }
+      $('playerPreview').classList.remove('err');
+      await refreshStatus();
+    }
+
+    async function takeSub() {
+      await pushGraphics();
+      const res = await api('/sub/take', { method: 'POST', body: {} });
+      if (!res || !res.ok) {
+        await refreshStatus();
+        return;
+      }
+      // Same path as Automatic Subs: animateIn/update carry the pair vars so
+      // names (and logo) play their in/update animations instead of popping in.
+      const pairs = (res.pairs && res.pairs.length)
+        ? res.pairs.slice()
+        : (res.sub ? [res.sub] : []);
+      const holdMs = Math.max(1, Number(res.hold_seconds || 4)) * 1000;
+      // Manual Take cuts in immediately (force); auto path queues instead.
+      await playSubPairs(pairs, holdMs, true);
+      await refreshStatus();
+    }
+    async function takeFoul() {
+      await pushGraphics();
+      const res = await api('/foul/take', { method: 'POST', body: {} });
+      if (!res || !res.ok) {
+        await refreshStatus();
+        return;
+      }
+      // Same timed path as Automatic Fouls (animateIn → hold → animateOut).
+      await runAutoPlayout({
+        kind: 'foul',
+        variables: res.foul || {},
+        hold_seconds: res.hold_seconds || 4,
+        force: true,
+      });
+      await refreshStatus();
+    }
+    async function takeLeaders() {
+      await pushGraphics();
+      await api('/leaders/take', { method: 'POST', body: {} });
+      await schedule('animateIn', selectedTitle('leaders'), {});
+    }
+    async function takeTimeout() {
+      await pushGraphics();
+      await api('/timeout/take', { method: 'POST', body: {} });
+      await schedule('animateIn', selectedTitle('timeout'), {});
+      await refreshStatus();
+    }
+
+    async function schedule(action, title, variables) {
+      const sched = captivateScheduler();
+      if (!sched) return;
+      const picked = title || '';
+      // animateIn/Out/update on a blank pick targets the whole input and would
+      // take every linked title (lineups, shot maps, …). Refuse until a graphic
+      // is selected in the dropdown.
+      const needsTitle = action === 'animateIn' || action === 'animateOut' || action === 'update';
+      if (needsTitle && !picked) {
+        const msg = 'Select a graphic title before animate — blank would air every linked title';
+        console.warn(msg, action);
+        const status = $('scraperStatus');
+        if (status) {
+          status.textContent = msg;
+          status.classList.add('err');
+        }
+        return false;
+      }
+      // A named graphic is addressed by its title id. still may use the input
+      // so linked titles get variable fills without taking them on air.
+      if (picked) await sched.scheduleAction(action, '', picked, variables || {});
+      else await sched.scheduleAction(action, INPUT_NAME, '', variables || {});
+      return true;
+    }
+
+    function pairsFor(action) {
+      if (action.pairs && action.pairs.length) return action.pairs.slice();
+      if (action.variables && Object.keys(action.variables).length) return [action.variables];
+      return [];
+    }
+
+    function autoTitleFor(kind) {
+      if (kind === 'timeout') return selectedTitle('timeout');
+      if (kind === 'foul') return selectedTitle('foul_trouble');
+      return selectedTitle('substitution');
+    }
+
+    function clearHoldTimer() {
+      if (holdTimer) {
+        clearTimeout(holdTimer);
+        holdTimer = null;
+      }
+    }
+
+    async function dismissOnAir() {
+      // Manual Take may cut in; auto path queues instead of dismissing.
+      const kind = onAirKind;
+      clearHoldTimer();
+      subPairQueue = [];
+      onAirKind = null;
+      if (!kind) return;
+      await schedule('animateOut', autoTitleFor(kind), {});
+    }
+
+    async function drainPendingAuto() {
+      if (onAirKind || !pendingAuto.length) return;
+      const next = pendingAuto.shift();
+      await runAutoPlayout(next);
+    }
+
+    function armHoldOut(kind, title, holdMs) {
+      clearHoldTimer();
+      onAirKind = kind;
+      holdTimer = setTimeout(async () => {
+        holdTimer = null;
+        if (onAirKind !== kind) return;
+        await schedule('animateOut', title, {});
+        if (onAirKind === kind) onAirKind = null;
+        await drainPendingAuto();
+      }, holdMs);
+    }
+
+    async function runAutoPlayout(action) {
+      const kind = action.kind;
+      const force = !!action.force;
+      const holdMs = Math.max(1, Number(action.hold_seconds || 4)) * 1000;
+      // While foul (etc.) is holding, queue subs — do not interrupt animateOut.
+      if (onAirKind && onAirKind !== kind && !force) {
+        pendingAuto.push(action);
+        return;
+      }
+      if (onAirKind && onAirKind !== kind && force) {
+        await dismissOnAir();
+      }
+      if (kind === 'sub') {
+        await playSubPairs(pairsFor(action), holdMs, force);
+        return;
+      }
+      const title = autoTitleFor(kind);
+      if (!title) {
+        await schedule('animateIn', title, action.variables || {});
+        return;
+      }
+      if (onAirKind === kind) {
+        clearHoldTimer();
+      }
+      await schedule('still', title, action.variables || {});
+      const aired = await schedule('animateIn', title, action.variables || {});
+      if (!aired) return;
+      armHoldOut(kind, title, holdMs);
+    }
+
+    async function playSubPairs(pairs, holdMs, force) {
+      if (!pairs.length) return;
+      // Already on air: keep the same animate and show the new pairs after the current one.
+      if (onAirKind === 'sub') {
+        subPairQueue = subPairQueue.concat(pairs);
+        return;
+      }
+      if (onAirKind && onAirKind !== 'sub') {
+        if (!force) return;
+        await dismissOnAir();
+      }
+      const first = pairs[0];
+      subPairQueue = pairs.slice(1);
+      const title = selectedTitle('substitution');
+      await schedule('still', title, first);
+      const aired = await schedule('animateIn', title, first);
+      if (!aired) {
+        subPairQueue = [];
+        return;
+      }
+      onAirKind = 'sub';
+      armSubHold(holdMs);
+    }
+
+    function armSubHold(holdMs) {
+      clearHoldTimer();
+      holdTimer = setTimeout(async () => {
+        holdTimer = null;
+        if (onAirKind !== 'sub') return;
+        if (subPairQueue.length) {
+          const next = subPairQueue.shift();
+          // Update (not still) so names and the team logo play their update animation.
+          await schedule('update', selectedTitle('substitution'), next);
+          onAirKind = 'sub';
+          armSubHold(holdMs);
+          return;
+        }
+        await schedule('animateOut', selectedTitle('substitution'), {});
+        onAirKind = null;
+        await drainPendingAuto();
+      }, holdMs);
+    }
+
+    async function clearSub() {
+      subPairQueue = [];
+      pendingAuto = [];
+      clearHoldTimer();
+      await schedule('animateOut', selectedTitle('substitution'), {});
+      onAirKind = null;
+    }
+    async function clearFoul() {
+      pendingAuto = [];
+      clearHoldTimer();
+      await schedule('animateOut', selectedTitle('foul_trouble'), {});
+      onAirKind = null;
+    }
+    async function clearTimeoutGfx() {
+      pendingAuto = [];
+      clearHoldTimer();
+      await schedule('animateOut', selectedTitle('timeout'), {});
+      onAirKind = null;
+    }
+
+    async function doUpdate() {
+      if (!scheduler) return;
+      await scheduler.scheduleAction('update', INPUT_NAME, '', {});
+    }
+    async function doStill() {
+      if (!scheduler) return;
+      await scheduler.scheduleAction('still', INPUT_NAME, '', {});
+    }
+    window.doUpdate = doUpdate;
+    window.doStill = doStill;
+    window.cuePlayer = cuePlayer;
+    window.takeSub = takeSub;
+    window.clearSub = clearSub;
+    window.takeFoul = takeFoul;
+    window.clearFoul = clearFoul;
+    window.takeLeaders = takeLeaders;
+    window.takeTimeout = takeTimeout;
+    window.clearTimeoutGfx = clearTimeoutGfx;
+
+    // Restore local prefs then sync to scraper. Subs/fouls default on when unset.
+    $('autoSubs').checked = localStorage.getItem('stp_ncaa_auto_subs') !== '0';
+    $('autoFouls').checked = localStorage.getItem('stp_ncaa_auto_fouls') !== '0';
+    $('autoTimeouts').checked = localStorage.getItem('stp_ncaa_auto_timeouts') === '1';
+    {
+      const savedHold = Number(localStorage.getItem(FOUL_HOLD_STORAGE_KEY));
+      persistFoulHoldSeconds(
+        Number.isFinite(savedHold) ? Math.min(60, Math.max(1, Math.round(savedHold))) : FOUL_HOLD_DEFAULT
+      );
+    }
+    restoreGraphicSelects();
+    document.querySelectorAll('select[data-graphic]').forEach((sel) => {
+      sel.addEventListener('change', pushGraphics);
+      sel.addEventListener('pointerenter', loadProjectTitles);
+      sel.addEventListener('focus', loadProjectTitles);
+      sel.addEventListener('blur', () => {
+        if (sel.getAttribute('data-titles-stale') === '1') applyProjectTitles(latestTitles);
+      });
+    });
+
+    ConnectionManager.init({
+      onReady: async () => {
+        scheduler = captivateScheduler();
+        $('connBadge').textContent = 'Captivate connected';
+        $('connBadge').classList.add('on');
+        watchProjectTitles();
+        await loadProjectTitles();
+        pushConfig();
+        pushGraphics();
+      },
+      onDisconnect: () => {
+        $('connBadge').textContent = 'Captivate disconnected';
+        $('connBadge').classList.remove('on');
+      }
+    });
+
+    setInterval(refreshStatus, 1000);
+    refreshStatus();
+  </script>
+</body>
+</html>

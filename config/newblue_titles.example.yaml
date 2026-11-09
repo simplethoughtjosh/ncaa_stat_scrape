@@ -1,0 +1,184 @@
+# STP_NCAA_Basketball Captivate mapping
+host: 127.0.0.1
+http_port: 9022
+tcp_port: 9025
+transport: dry-run  # http | tcp | dry-run
+default_action: still
+default_input: "STP_NCAA_Basketball: Main"
+
+titles:
+  home_on_court:
+    title: ""
+    input: "STP_NCAA_Basketball: Main"
+    variables:
+      team_name: home_team
+      player_1_name: home_p1_name
+      player_1_name_first: home_p1_name_first
+      player_1_name_last: home_p1_name_last
+      player_1_number: home_p1_number
+      player_1_pos: home_p1_pos
+      player_1_photo: home_p1_photo
+      player_2_name: home_p2_name
+      player_2_name_first: home_p2_name_first
+      player_2_name_last: home_p2_name_last
+      player_2_number: home_p2_number
+      player_2_pos: home_p2_pos
+      player_2_photo: home_p2_photo
+      player_3_name: home_p3_name
+      player_3_name_first: home_p3_name_first
+      player_3_name_last: home_p3_name_last
+      player_3_number: home_p3_number
+      player_3_pos: home_p3_pos
+      player_3_photo: home_p3_photo
+      player_4_name: home_p4_name
+      player_4_name_first: home_p4_name_first
+      player_4_name_last: home_p4_name_last
+      player_4_number: home_p4_number
+      player_4_pos: home_p4_pos
+      player_4_photo: home_p4_photo
+      player_5_name: home_p5_name
+      player_5_name_first: home_p5_name_first
+      player_5_name_last: home_p5_name_last
+      player_5_number: home_p5_number
+      player_5_pos: home_p5_pos
+      player_5_photo: home_p5_photo
+
+  away_on_court:
+    title: ""
+    input: "STP_NCAA_Basketball: Main"
+    variables:
+      team_name: away_team
+      player_1_name: away_p1_name
+      player_1_name_first: away_p1_name_first
+      player_1_name_last: away_p1_name_last
+      player_1_number: away_p1_number
+      player_1_pos: away_p1_pos
+      player_1_photo: away_p1_photo
+      player_2_name: away_p2_name
+      player_2_name_first: away_p2_name_first
+      player_2_name_last: away_p2_name_last
+      player_2_number: away_p2_number
+      player_2_pos: away_p2_pos
+      player_2_photo: away_p2_photo
+      player_3_name: away_p3_name
+      player_3_name_first: away_p3_name_first
+      player_3_name_last: away_p3_name_last
+      player_3_number: away_p3_number
+      player_3_pos: away_p3_pos
+      player_3_photo: away_p3_photo
+      player_4_name: away_p4_name
+      player_4_name_first: away_p4_name_first
+      player_4_name_last: away_p4_name_last
+      player_4_number: away_p4_number
+      player_4_pos: away_p4_pos
+      player_4_photo: away_p4_photo
+      player_5_name: away_p5_name
+      player_5_name_first: away_p5_name_first
+      player_5_name_last: away_p5_name_last
+      player_5_number: away_p5_number
+      player_5_pos: away_p5_pos
+      player_5_photo: away_p5_photo
+
+  player_l3:
+    title: ""
+    input: "STP_NCAA_Basketball: Main"
+    variables:
+      player_team: player_team
+      player_team_side: player_team_side
+      player_name: player_name
+      player_number: player_number
+      player_pos: player_pos
+      player_photo: player_photo
+      player_team_logo: player_team_logo
+      player_pts: player_pts
+      player_fg: player_fg
+      player_3pt: player_3pt
+      player_ft: player_ft
+      player_reb: player_reb
+      player_ast: player_ast
+      player_stl: player_stl
+      player_blk: player_blk
+      player_to: player_to
+      player_pf: player_pf
+      player_min: player_min
+      player_ft_attempt: player_ft_attempt
+      player_code: player_code
+
+  game_summary:
+    title: ""
+    input: "STP_NCAA_Basketball: Main"
+    variables:
+      away_team: away_team
+      home_team: home_team
+      away_team_logo: away_team_logo
+      home_team_logo: home_team_logo
+      away_score: away_score
+      home_score: home_score
+      period_label: period_label
+      clock: clock
+      away_fg: away_fg
+      home_fg: home_fg
+      away_3pt: away_3pt
+      home_3pt: home_3pt
+      away_ft: away_ft
+      home_ft: home_ft
+      away_reb: away_reb
+      home_reb: home_reb
+      away_ast: away_ast
+      home_ast: home_ast
+      away_to: away_to
+      home_to: home_to
+      away_stl: away_stl
+      home_stl: home_stl
+      away_blk: away_blk
+      home_blk: home_blk
+      away_pf: away_pf
+      home_pf: home_pf
+      away_stats_overall: away_stats_overall
+      home_stats_overall: home_stats_overall
+      away_stats_conference: away_stats_conference
+      home_stats_conference: home_stats_conference
+      away_coach_name: away_coach_name
+      home_coach_name: home_coach_name
+      away_coach_photo: away_coach_photo
+      home_coach_photo: home_coach_photo
+      away_coach_school_total: away_coach_school_total
+      home_coach_school_total: home_coach_school_total
+      away_coach_career_total: away_coach_career_total
+      home_coach_career_total: home_coach_career_total
+      away_coach_season_total: away_coach_season_total
+      home_coach_season_total: home_coach_season_total
+      away_coach_total_seasons: away_coach_total_seasons
+      home_coach_total_seasons: home_coach_total_seasons
+
+  sport:
+    title: ""
+    input: "STP_NCAA_Basketball: Main"
+    variables: {}
+
+  foul_trouble:
+    title: ""
+    input: "STP_NCAA_Basketball: Main"
+    variables: {}
+
+  leaders:
+    title: ""
+    input: "STP_NCAA_Basketball: Main"
+    variables: {}
+
+  substitution:
+    title: "sub"
+    input: "STP_NCAA_Basketball: Main"
+    variables: {}
+
+  timeout:
+    title: ""
+    input: "STP_NCAA_Basketball: Main"
+    variables: {}
+
+  shot_maps:
+    title: ""
+    input: "STP_NCAA_Basketball: Main"
+    variables:
+      away_shot_map: away_shot_map
+      home_shot_map: home_shot_map

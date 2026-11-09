@@ -1,0 +1,9 @@
+# Optional overrides for SSC Scoreboard Automation colors.
+# Keys are team display names (case-insensitive). Values are #RGB or #RRGGBB.
+#
+# Copy to config/team_colors.yaml (gitignored if you prefer) or edit in place.
+# When a team is missing here, the scraper samples the school logo, then falls
+# back to #C8102E (home) / #1A3A6B (away).
+
+Florida Southern: "#C8102E"
+Riverside: "#1A3A6B"
