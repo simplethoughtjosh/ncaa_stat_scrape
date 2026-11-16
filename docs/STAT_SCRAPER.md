@@ -9,7 +9,23 @@ You do **not** need to know Python to use it day-of — just start the `control`
 1. **Box score page** — loaded once when you open a game. Gives rosters, starting stats, and “secret keys” so we can listen live.
 2. **Live stream (Faye)** — continuous updates: points, fouls, who’s on the court, play-by-play text, shot locations.
 
-The scraper pretends to be a normal Chrome browser so the NCAA site accepts the connection. If the site still shows its access check (a short “verifying” page, then “Continue to NCAA Statistics?”), the scraper opens Chrome, reviews the terms page, and continues. That window closes by itself.
+### Session ladder (one cookie jar)
+
+The scraper pretends to be a normal Chrome browser so the NCAA site accepts the connection. For the **box score** and for later **team/coach** pages it uses the same ladder and the **same cookie jar** (not a second login):
+
+1. Soft cookie GET  
+2. Curl clears Akamai interstitial / NCAA terms (same solvers as the live box path; no homepage warm-up mid-stream)  
+3. Chrome last resort if still gated — window opens, accepts terms, closes by itself  
+
+Team and coach season enrich reuse that jar after Faye is up. Chrome opens again only if curl cannot clear the gate on `/teams/` or `/people/`.
+
+### Linescore totals
+
+Away/home score from the HTML linescore comes from each team’s `score_{competitorId}` cell. Mid-game period slots are often blank, and the clock can sit on the away row — so an empty cell on one side must not drop **both** scores. The parser keeps moving to the other team.
+
+### Stale player box stats
+
+Faye has no replay cursor. If the scoreboard shows points but every player (and both team totals) still have **0 PTS**, the scraper does a **one-shot soft HTML refresh** of the box page (before Faye when resuming a zeroed snapshot, or once on a live message) so L3 stats catch up without opening Chrome mid-stream.
 
 ## Women’s vs men’s (automatic)
 
@@ -62,7 +78,7 @@ Colors (only for teams that still need a PNG) come from, in order: CLI override 
 
 ## Season records and coach summary
 
-After the box score is live, the scraper looks up each school’s NCAA team page (and head-coach page when linked) and fills season W–L / conference records plus coach name, photo, school/career/season totals, and total seasons. Those values land on the **game summary** variables (`away_stats_*`, `home_coach_*`, …). Soft cookie fetch is preferred; Chrome opens only when the stats pages need it.
+After the box score is live, the scraper looks up each school’s NCAA team page (and head-coach page when linked) and fills season W–L / conference records plus coach name, photo, school/career/season totals, and total seasons. Those values land on the **game summary** variables (`away_stats_*`, `home_coach_*`, …). Team and coach pages reuse the **same cookie jar** as the live box score: soft cookie GET first, then the same curl interstitial/terms clear as the box path. Chrome opens again only if curl cannot clear the gate on `/teams/` or `/people/`.
 
 ## Roster photos (optional)
 

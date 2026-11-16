@@ -37,7 +37,7 @@ Use `MBB` for men’s. Note the **game id** number from the list (or paste it fr
 python -m college_sports_scraper.cli control --game-id YOUR_GAME_ID
 ```
 
-The first time you open a game, a Chrome window may appear, open the NCAA terms page, and close on its own. That is the site asking you to confirm the terms before it will show the live box score. A restart reuses cookies when they still work, and restores the last live snapshot (period, clock, score, shots, lineups) saved on quit — NCAA’s stream has no replay “sequence,” so that snapshot is how we catch up like a page reload. Chrome opens again only when the saved session cannot subscribe or there is no snapshot yet. Leave the terminal window open. You should see:
+The first time you open a game, a Chrome window may appear, open the NCAA terms page, and close on its own. That is the site asking you to confirm the terms before it will show the live box score. A restart reuses cookies when they still work, and restores the last live snapshot (period, clock, score, shots, lineups) saved on quit — NCAA’s stream has no replay “sequence,” so that snapshot is how we catch up like a page reload. Chrome opens again only when the saved session cannot subscribe or there is no snapshot yet. Team and coach season pages reuse that **same session**; Chrome opens for them only if the access gate returns. Leave the terminal window open. You should see:
 
 - Sport auto-detected (`WBB` or `MBB`)  
 - Control HTTP on port **8765**  
@@ -73,9 +73,11 @@ In the `control` window:
 | Type | Result |
 |------|--------|
 | `status` | Print on-court fives |
+| `away` / `home` / `both` | Push on-court lineup graphic(s) |
 | `player H21` | Same as Cue Player |
 | `summary` | Push game summary vars |
 | `foul` / `leaders` | Push those boards |
+| `scoreboard` | Run SSC scoreboard PNG export again (skips teams that already exist) |
 | `sub` or `sub 2` | Fake a substitution with random roster names (airs the graphic) |
 | `quit` | Stop cleanly |
 

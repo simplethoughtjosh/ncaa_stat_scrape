@@ -34,6 +34,7 @@ class BasketballLiveSession:
         self._faye: FayeClient | None = None
         self._task: asyncio.Task[None] | None = None
         self._from_saved_snapshot = False
+        self._stats_resync_attempted = False
 
     def bootstrap(self, html: str | None = None, *, challenge: bool = False) -> BasketballLiveState:
         self._from_saved_snapshot = False
@@ -110,14 +111,58 @@ class BasketballLiveSession:
         if self.state is None:
             return
         self.state.apply_message(channel, data)
+        if (
+            self.state.player_box_stats_stale()
+            and not self._stats_resync_attempted
+        ):
+            self._stats_resync_attempted = True
+            logger.warning(
+                "Game %s has score %s-%s but player box stats are still zero; "
+                "refreshing the box-score page once to resync L3 stats",
+                self.game_id,
+                self.state.away_score,
+                self.state.home_score,
+            )
+            try:
+                # Soft cookie fetch only — Chrome warm-up would kill livestream cookies.
+                await asyncio.to_thread(self._refresh_live_html, allow_chrome=False)
+            except Exception:
+                logger.exception(
+                    "Box-score stats resync failed for game %s", self.game_id
+                )
         if self.on_update:
             self.on_update(self.state, data)
 
-    def _refresh_live_html(self) -> BasketballLiveState:
-        """Replace state from a current box-score page (Chrome/terms when needed)."""
-        html = self.client.get_live_box_score_html(self.game_id)
+    def _refresh_live_html(self, *, allow_chrome: bool = True) -> BasketballLiveState:
+        """Replace state from a current box-score page (Chrome/terms when needed).
+
+        While Faye is already connected, pass ``allow_chrome=False``. Opening
+        Chrome goes through homepage warm-up and can churn Akamai cookies until
+        livestream.ncaa.org starts returning 403.
+        """
+        prior = self.state.to_live_snapshot() if self.state is not None else None
+        url = self.client.live_box_score_url(self.game_id)
+        soft = self.client.browser.fetch_document_without_chrome(url)
+        if soft is not None:
+            html = soft.text
+        elif allow_chrome:
+            html = self.client.get_live_box_score_html(self.game_id)
+        else:
+            raise RuntimeError(
+                "Box-score page needs Chrome; skipped so the live Faye session stays up"
+            )
+        self.client.browser.pin_document_referer(url)
         self.state = bootstrap_live_state(html, self.game_id)
         self._from_saved_snapshot = False
+        # Keep stream-only history the HTML page does not fully rebuild.
+        if prior is not None:
+            self.state.apply_live_snapshot(
+                {
+                    "game_id": prior.get("game_id"),
+                    "plays": prior.get("plays") or {},
+                    "shots": prior.get("shots") or [],
+                }
+            )
         self.save_live_snapshot()
         logger.info(
             "Refreshed game %s (%s) period=%s clock=%s score=%s-%s",
@@ -134,6 +179,42 @@ class BasketballLiveSession:
         if self.state is None:
             await asyncio.to_thread(self.bootstrap)
         used_snapshot = self._from_saved_snapshot
+
+        if used_snapshot:
+            # Disk HTML can be old. Prefer the live snapshot from the last quit
+            # (NCAA Faye has no replay cursor). Refresh *before* Faye connects —
+            # Chrome warm-up mid-stream churns Akamai cookies into livestream 403s.
+            resumed = self._apply_saved_live_snapshot()
+            needs_html = (not resumed) or (
+                self.state is not None and self.state.player_box_stats_stale()
+            )
+            if needs_html:
+                reason = (
+                    "snapshot has score but zero player stats"
+                    if resumed
+                    else "no live snapshot"
+                )
+                # Soft always. Chrome only when there is nothing to resume — a
+                # mid-resume Chrome pass would wipe the quit-time score/clock, and
+                # Faye probe failure already opens Chrome when cookies are dead.
+                allow_chrome = not resumed
+                logger.info(
+                    "Refreshing the box score page for game %s (%s, chrome=%s)",
+                    self.game_id,
+                    reason,
+                    allow_chrome,
+                )
+                try:
+                    await asyncio.to_thread(
+                        self._refresh_live_html, allow_chrome=allow_chrome
+                    )
+                    self._stats_resync_attempted = True
+                except Exception:
+                    logger.exception(
+                        "Box score refresh failed; keeping the saved page for game %s",
+                        self.game_id,
+                    )
+
         try:
             await self._open_faye(probe=used_snapshot)
         except Exception:
@@ -154,29 +235,9 @@ class BasketballLiveSession:
             self.save_live_snapshot()
             return self.state
 
-        if used_snapshot:
-            # Disk HTML can be old. Prefer the live snapshot from the last quit
-            # (NCAA Faye has no replay sequence). Try a page refresh only when
-            # that snapshot is missing — and never kill a working Faye session
-            # if Chrome gets stuck on the terms check.
-            resumed = self._apply_saved_live_snapshot()
-            if not resumed:
-                logger.info(
-                    "No live snapshot for game %s; refreshing the box score page so state is current",
-                    self.game_id,
-                )
-                try:
-                    await asyncio.to_thread(self._refresh_live_html)
-                except Exception:
-                    logger.exception(
-                        "Box score refresh failed; keeping the saved page and live stream for game %s",
-                        self.game_id,
-                    )
-            if self.on_update and self.state is not None:
-                self.on_update(self.state, {})
-            self.save_live_snapshot()
-        else:
-            self.save_live_snapshot()
+        if used_snapshot and self.on_update and self.state is not None:
+            self.on_update(self.state, {})
+        self.save_live_snapshot()
         await self._wait_for_tipoff()
         return self.state
 
@@ -317,6 +378,9 @@ class BasketballLiveSession:
         # Scoreboard channel is optional; only subscribe when token present.
         if self.state.auth.token_for(self.state.scoreboard_channel):
             channels.append(self.state.scoreboard_channel)
+
+        # Faye must look like it was opened from the box-score tab, not the homepage.
+        self.client.browser.pin_document_referer(self.client.live_box_score_url(self.game_id))
 
         # Reuse the same Chrome session/cookies/referer as the box-score page.
         self._faye = FayeClient(

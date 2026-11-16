@@ -143,7 +143,8 @@ def test_saved_cookies_load_the_box_score_without_chrome_or_homepage(tmp_path, m
     assert requested == [url]
     assert f"{BASE_URL}/" not in requested
     assert chrome == []
-    assert browser._warmed is False
+    # Disk box-score session marks warmed so homepage warm-up cannot churn cookies.
+    assert browser._warmed is True
     assert seen == [html]
     assert _FakeFaye.created[0].waited_connected is True
     assert _FakeFaye.created[0].waited_subscribed is False
@@ -276,7 +277,9 @@ def test_failed_subscribe_falls_through_to_chrome(tmp_path, monkeypatch):
 
     asyncio.run(run())
 
-    assert chrome == [GAME_ID]
+    # No live snapshot → one Chrome refresh before the probe, then again after
+    # the saved Faye tokens are rejected.
+    assert chrome == [GAME_ID, GAME_ID]
     assert seen[0] == saved
     assert "FROM-CHROME" in seen[-1]
     assert _FakeFaye.created[0].waited_subscribed is True
@@ -358,3 +361,47 @@ def test_subscribe_reply_is_required_before_the_session_counts(tmp_path):
     asyncio.run(accepted())
     assert client._subscribed.is_set()
     assert client.reconnect is True
+
+
+def test_warm_up_keeps_box_score_referer_for_faye(tmp_path, monkeypatch):
+    browser = BrowserSession(cookie_path=tmp_path / "ncaa_session.json", timeout=5)
+    box_url = f"{BASE_URL}/contests/livestream_scoreboards/{GAME_ID}/box_score"
+    browser.pin_document_referer(box_url)
+
+    def fake_fetch(url, params=None, headers=None):
+        browser._last_document_url = url.rstrip("/") + "/" if url.endswith("ncaa.org") else url
+        return _response(url, "<html>ok</html>")
+
+    monkeypatch.setattr(browser, "_fetch_curl", fake_fetch)
+    browser.warm_up()
+    assert browser.referer == box_url
+    assert browser.faye_headers()["Referer"] == box_url
+
+
+def test_faye_access_denied_does_not_reconnect(tmp_path):
+    from college_sports_scraper.ncaa.faye import _is_faye_access_denied
+
+    assert _is_faye_access_denied(RuntimeError("HTTP Error 403:"))
+    assert _is_faye_access_denied(
+        RuntimeError("Failed to perform, curl: (22) Refused WebSocket upgrade: 403")
+    )
+    assert not _is_faye_access_denied(TimeoutError("timed out"))
+
+    browser = BrowserSession(cookie_path=tmp_path / "ncaa_session.json", timeout=5)
+    client = FayeClient(
+        auth=FayeAuth("user-1", {"/WBB/box_score/1": "tok"}),
+        browser=browser,
+        transport="long-polling",
+        reconnect=True,
+    )
+
+    def boom(_messages):
+        raise RuntimeError("HTTP Error 403:")
+
+    client._http_post = boom  # type: ignore[method-assign]
+
+    async def run():
+        with pytest.raises(RuntimeError, match="403"):
+            await client.run(["/WBB/box_score/1"])
+
+    asyncio.run(run())

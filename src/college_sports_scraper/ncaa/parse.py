@@ -408,17 +408,36 @@ def parse_box_score_clock(html: str) -> tuple[str | None, str | None]:
 
 
 def parse_linescore_totals(html: str) -> tuple[str | None, str | None]:
-    """Return (away_total, home_total) from the linescore table when present."""
+    """Return (away_total, home_total) from the linescore table when present.
+
+    Prefer each team's ``score_{competitorId}`` cell. Mid-game period slots are
+    often blank (and the clock can land on the away row), so requiring
+    ``cells[-1].isdigit()`` on every row used to drop *both* scores when only
+    one side looked empty. An empty total still advances to the other team.
+    """
     soup = BeautifulSoup(html, "lxml")
     table = soup.find("table", id=re.compile(r"^linescore_"))
     if table is None:
         return None, None
-    rows = table.find_all("tr")
-    totals: list[str] = []
-    for row in rows:
+
+    totals: list[str | None] = []
+    for row in table.find_all("tr"):
+        score_cell = row.find(id=re.compile(r"^score_\d+$"))
+        if score_cell is None:
+            continue
+        text = score_cell.get_text(strip=True)
+        # Blank score cell still counts as that side so home stays aligned.
+        totals.append(text if text.isdigit() else None)
+        if len(totals) >= 2:
+            return totals[0], totals[1]
+
+    # Older / partial HTML without score_* ids: last numeric cell per team row.
+    fallback: list[str | None] = []
+    for row in table.find_all("tr"):
         cells = [c.get_text(strip=True) for c in row.find_all("td")]
-        if len(cells) >= 2 and cells[-1].isdigit():
-            totals.append(cells[-1])
-    if len(totals) >= 2:
-        return totals[0], totals[1]
+        digit_cells = [c for c in cells if c.isdigit()]
+        if digit_cells:
+            fallback.append(digit_cells[-1])
+        if len(fallback) >= 2:
+            return fallback[0], fallback[1]
     return None, None

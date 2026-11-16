@@ -156,6 +156,10 @@ class BrowserSession:
                     }
                     if self._box_score["url"]:
                         self._last_document_url = self._box_score["url"]
+                        # Already have a real browsing session on disk — do not
+                        # hit the homepage again (that churns Akamai cookies and
+                        # rewrites Faye's Referer to https://stats.ncaa.org/).
+                        self._warmed = True
                 live = data.get("live")
                 if isinstance(live, dict) and live.get("game_id"):
                     self._live = live
@@ -268,12 +272,22 @@ class BrowserSession:
         """Hit the homepage like a first visit so cookies/Akamai see a real browsing session."""
         if self._warmed:
             return
+        # Keep Faye Origin/Referer on the box-score page across this hop.
+        prior_referer = self._last_document_url
         logger.info("Warming browser session against %s", BASE_URL)
         self._warmed = True
         try:
             self._fetch_curl(BASE_URL + "/")
         except Exception:
             logger.info("Homepage warm-up did not finish the NCAA access check")
+        finally:
+            if _game_id_from_url(prior_referer) or "/box_score" in (prior_referer or ""):
+                self._last_document_url = prior_referer
+
+    def pin_document_referer(self, url: str) -> None:
+        """Force Faye/document Referer to the live box-score page."""
+        if url:
+            self._last_document_url = url
 
     def _drop_named_cookies(self, *names: str) -> None:
         jar = self.session.cookies.jar
@@ -430,11 +444,23 @@ class BrowserSession:
         self.save_session(box_score=self._box_score_record(url, html))
         return DocumentResponse(text=html, url=url)
 
+    @staticmethod
+    def _usable_stats_html(html: str, *, status: int = 200) -> bool:
+        """True when HTML looks like a real team/coach page (not an access gate)."""
+        if status >= 400 or not html:
+            return False
+        if "Access Denied" in html[:500]:
+            return False
+        return not is_access_gate(html)
+
     def fetch_stats_html(self, path_or_url: str) -> str | None:
-        """Load a team/coach/stats page with cookies, then Chrome if needed.
+        """Load a team/coach/stats page with the live cookie jar, then curl, then Chrome.
 
         Unlike live box-score soft probes, this accepts pages that do not carry
-        Faye credentials.
+        Faye credentials. Reuses the box-score session: soft GET first, then the
+        same ``_fetch_curl`` interstitial/terms ladder as ``get_document`` (no
+        homepage warm-up — that can churn Akamai cookies and break Faye). Chrome
+        is last resort only.
         """
         url = self.absolute(path_or_url)
         if self._has_cookies():
@@ -457,14 +483,23 @@ class BrowserSession:
             if response is not None:
                 status = int(getattr(response, "status_code", 0) or 0)
                 html = getattr(response, "text", "") or ""
-                if (
-                    status < 400
-                    and html
-                    and "Access Denied" not in html[:500]
-                    and not is_access_gate(html)
-                ):
+                if self._usable_stats_html(html, status=status):
                     self._last_document_url = str(getattr(response, "url", url) or url)
                     return html
+
+        # Same gate solvers as the live box path — keep the shared jar usable.
+        try:
+            curled = self._fetch_curl(url)
+        except Exception:
+            curled = None
+        if curled is not None:
+            html = getattr(curled, "text", "") or ""
+            status = int(getattr(curled, "status_code", 0) or 200)
+            if self._usable_stats_html(html, status=status):
+                final = str(getattr(curled, "url", url) or url)
+                self._last_document_url = final
+                return html
+
         try:
             return self._fetch_with_chrome(url, require_live_box=False).text
         except Exception:

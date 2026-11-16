@@ -456,6 +456,31 @@ class BasketballLiveState:
                     elif self.home and competitor_id == self.home.competitor_id:
                         self.home_score = text
 
+    def player_box_stats_stale(self) -> bool:
+        """True when the scoreboard shows scoring but every player still has 0 PTS.
+
+        Faye has no replay cursor. If box_score deltas were missed (or a zeroed
+        snapshot was resumed), clock/score can look live while L3 stats stay empty.
+        """
+        def _as_int(value: Any) -> int:
+            try:
+                return int(str(value).strip() or "0")
+            except ValueError:
+                return 0
+
+        scored = _as_int(self.away_score) + _as_int(self.home_score)
+        if scored <= 0:
+            return False
+        for team in (self.away, self.home):
+            if team is None:
+                continue
+            if _as_int(team.totals.get("PTS")) > 0:
+                return False
+            for player in team.players.values():
+                if _as_int(player.stats.get("PTS")) > 0:
+                    return False
+        return True
+
     def _apply_box_score(self, updates: dict[str, Any]) -> None:
         for key, value in updates.items():
             # {competitorId}_{playerId}_{statName}  — playerId may be -100 for totals
@@ -467,6 +492,12 @@ class BasketballLiveState:
             if team is None:
                 continue
 
+            # DOM ids append a display-group suffix (…_sPoints_10120). Faye keys
+            # usually omit it, but strip a trailing _digits group when present.
+            if stat_name not in STAT_ALIASES:
+                stripped = re.sub(r"_\d+$", "", stat_name)
+                if stripped in STAT_ALIASES:
+                    stat_name = stripped
             display_stat = STAT_ALIASES.get(stat_name, stat_name)
             normalized = value
             if isinstance(value, str):

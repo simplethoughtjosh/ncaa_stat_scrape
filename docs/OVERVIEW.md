@@ -18,13 +18,27 @@ NCAA live box score  →  Stat scraper (this app)  →  NewBlue graphics
 | **Graphics designer** | Link Captivate titles to `STP_NCAA_Basketball: Main` variables |
 | **Engineer** | Keep the scraper running, fix parsers, add tests when features change |
 
-## What a typical show looks like
+## Startup → air (overall flow)
 
-1. Find today’s game (women’s or men’s) and start the scraper with that game id.
-2. The scraper detects **Women’s (WBB)** vs **Men’s (MBB)** automatically from the box score.
-3. Live stats stream in. The scraper keeps an up-to-date picture of the game (score, on-court five, fouls, etc.).
-4. Captivate titles read variables from the **STP NCAA Basketball** controller.
-5. You cue or auto-air graphics (player lower-third, substitutions, foul trouble, leaders, timeout, shot maps).
+```mermaid
+flowchart LR
+  start[control game_id] --> chrome[Chrome cookies once]
+  chrome --> box[Box HTML bootstrap]
+  box --> faye[Faye live stream]
+  faye --> enrich[Photos + season + scoreboards]
+  enrich --> http[Control HTTP 8765]
+  http --> captivate[Captivate STP panel]
+  captivate --> titler[Titler Live titles]
+```
+
+1. **Find / start** — pick today’s game (`find-games` or a known game id) and run `control --game-id …`.
+2. **NCAA session** — soft cookies first; if the site still shows its access check, Chrome opens once, accepts terms, and leaves cookies in a shared jar. The box-score HTML bootstraps rosters and live keys; sport is detected as **WBB** or **MBB**.
+3. **Live stream** — Faye connects for score, clock, on-court, plays, and shots. A quit-time snapshot restores period/clock/score/shots/lineups on restart (NCAA has no replay cursor).
+4. **Enrich (parallel, after connect)** — roster photos into `~/SSC` when needed; team/coach season pages on the **same cookie jar**; scoreboard PNGs via SSC automation (teams that already exist in Title_Stuff are skipped).
+5. **Control + Captivate** — HTTP on `127.0.0.1:8765`; the **STP NCAA Basketball** panel polls it and Link Data feeds Titler Live titles.
+6. **On air** — auto or manual cues (player L3, subs, foul trouble, leaders, timeout, shot maps).
+
+Day-of steps: [OPERATOR_GUIDE.md](OPERATOR_GUIDE.md). Data sources and session details: [STAT_SCRAPER.md](STAT_SCRAPER.md).
 
 ## Documents in this folder
 

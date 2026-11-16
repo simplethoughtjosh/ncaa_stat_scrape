@@ -30,6 +30,25 @@ MessageHandler = Callable[[str, dict[str, Any]], Awaitable[None] | None]
 Transport = Literal["websocket", "long-polling", "auto"]
 
 
+def _is_faye_access_denied(exc: BaseException) -> bool:
+    """True when Akamai/WAF rejected livestream.ncaa.org (cookies need Chrome)."""
+    text = str(exc).lower()
+    if "access denied" in text:
+        return True
+    if "403" in text and (
+        "http error" in text
+        or "refused websocket" in text
+        or "websocket upgrade" in text
+        or "status" in text
+    ):
+        return True
+    status = getattr(exc, "status_code", None) or getattr(exc, "code", None)
+    try:
+        return int(status) == 403
+    except (TypeError, ValueError):
+        return False
+
+
 @dataclass
 class FayeAuth:
     """Per-page credentials embedded in the NCAA box-score HTML."""
@@ -306,12 +325,17 @@ class FayeClient:
                     last_error = exc
                     self._connected.clear()
                     logger.warning("Faye %s failed: %s", mode, exc)
+                    # Akamai 403 will not clear by retrying — escalate for Chrome.
+                    if _is_faye_access_denied(exc):
+                        raise
             if self._stop.is_set():
                 break
             if not self.reconnect:
                 if last_error:
                     raise last_error
                 break
+            if last_error is not None and _is_faye_access_denied(last_error):
+                raise last_error
             logger.info("Faye reconnecting in 2s")
             await asyncio.sleep(2)
 

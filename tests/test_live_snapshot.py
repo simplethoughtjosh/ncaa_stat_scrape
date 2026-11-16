@@ -37,3 +37,39 @@ def test_live_snapshot_round_trip_restores_clock_score_shots_and_on_court():
     assert restored.away is not None
     again = restored.away.players[player.player_id]
     assert again.on_court is False
+
+
+def test_player_box_stats_stale_when_score_exists_but_everyone_has_zero_points():
+    state = bootstrap_live_state(FIXTURE.read_text(), "6656891")
+    assert state.away and state.home
+    for player in list(state.away.roster()) + list(state.home.roster()):
+        player.stats["PTS"] = 0
+    state.away.totals["PTS"] = 0
+    state.home.totals["PTS"] = 0
+    state.away_score = "5"
+    state.home_score = "21"
+    assert state.player_box_stats_stale() is True
+
+    player = next(p for p in state.home.roster() if p.name)
+    player.stats["PTS"] = 4
+    assert state.player_box_stats_stale() is False
+
+
+def test_apply_box_score_accepts_display_group_suffix_on_stat_keys():
+    state = bootstrap_live_state(FIXTURE.read_text(), "6656891")
+    assert state.home
+    player = next(p for p in state.home.roster() if p.name)
+    competitor = state.home.competitor_id
+    state.apply_message(
+        state.box_score_channel,
+        {
+            "box_score": {
+                f"{competitor}_{player.player_id}_sPoints_10120": "8",
+                f"{competitor}_{player.player_id}_sFreeThrowsMade_10120": "2",
+                f"{competitor}_{player.player_id}_sFreeThrowsAttempted_10120": "3",
+            }
+        },
+    )
+    assert player.stats.get("PTS") == 8
+    assert player.stats.get("FTM") == 2
+    assert player.stats.get("FTA") == 3
